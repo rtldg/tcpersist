@@ -1,0 +1,11 @@
+[package]
+name = "tc-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = "0.4"
+uefi = { version = "0.19.1", default-features = false, features = ["alloc", "unstable", "global_allocator", "panic-on-logger-errors"] } #path = "../uefi-rs/uefi"
+uefi-services = "0.16" #{ path = "../uefi-rs/uefi-services" }
+binread = { version = "2.2.0", features = ["const_generics"], default-features = false }
+ntfs = { version = "0.3.1", default-features = false }
